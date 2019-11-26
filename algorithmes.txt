@@ -1,1 +1,9 @@
-coucou
+- Global illumination : https://en.wikipedia.org/wiki/Global_illumination
+- Rendering Equation : https://en.wikipedia.org/wiki/Rendering_equation
+- Gouraud Shading : https://en.wikipedia.org/wiki/Gouraud_shading
+- Phong Shading : https://en.wikipedia.org/wiki/Phong_shading
+- Progressive Refinement : https://en.wikipedia.org/wiki/Progressive_refinement
+- Shading : https://en.wikipedia.org/wiki/Shading
+- Format object : .obj
+- Blender
+- Format XML
