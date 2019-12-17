@@ -14,8 +14,10 @@ using namespace std;
    int i;
    ifstream sceneFile(inputName);
    if (!sceneFile)
+   {
     printf("Erreur d'ouverture du fichier scene\n");
     return  false;
+   }
    sceneFile >> myScene.sizex >> myScene.sizey;
    sceneFile >> nbMat >> nbSphere >> nbLight;
    myScene.matTab.resize(nbMat); 
@@ -58,7 +60,10 @@ using namespace std;
  {
    ofstream imageFile(outputName,ios_base::binary);
    if (!imageFile)
+   {
+     printf("erreur de generation fichier outpout\n");
      return false; 
+   }
    // Ajout du header TGA
    imageFile.put(0).put(0);
    imageFile.put(2);        /* RGB non compresse */
@@ -158,17 +163,30 @@ using namespace std;
    return true;
  }
 
- int main(int argc, char* argv[]) {
-   if  (argc < 3)
+ int main(int argc, char* argv[]) 
+ {
+  // argv[1] = nom du fichier scene.txt et argv[2] = nom du fichier outpout
+  printf("argc = %d\n",argc );
+   if  (argc < 3) 
+   {
      printf("Erreur 1 ! \n");
      return -1;
+    }
+    
    scene myScene;
-   printf("reussi ! \n");
+
    if (!init(argv[1], myScene))
-    printf("Erreur 2 ! \n");
-    return -1;
+    {
+     printf("Erreur 2 ! \n");
+     return -1;
+    }
+   printf("Initialisation reussie \n");
+
    if (!draw(argv[2], myScene))
+   {
     printf("Erreur 3 ! \n");
     return -1;
+   }
+   printf("Termine ! \n");
    return 0;
  }
