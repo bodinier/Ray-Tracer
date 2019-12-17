@@ -1,0 +1,5 @@
+Projet avec fichiers : http://www.massal.net/article/raytrace/page1.html
+TD Supop : http://paristech.institutoptique.fr/site.php?id=857&fileid=9347
+2e : https://codes-sources.commentcamarche.net/source/26153-petit-raytracer-lancer-de-rayons
+TD : http://guitteny-fabrice.chez-alice.fr/Projets/Master1/ImageNum/Rapport_Raytracing.PDF
+
