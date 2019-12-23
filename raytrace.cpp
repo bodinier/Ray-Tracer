@@ -9,7 +9,7 @@
 
 using namespace std;
 
-#include "raytrace_PLAN.h"
+#include "raytrace.h"
 
 bool init(char* inputName, scene &myScene) 
     {
