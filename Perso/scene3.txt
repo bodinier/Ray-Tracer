@@ -1,0 +1,11 @@
+640 480 // dimensions image
+4 3 1 1 // nombre d'objets - nombre de spheres - nombre de plans - nombre de lumières
+1.0 1.0 0.0 0.5 // 1er material : r - v - b - coef reflexion
+0.0 1.0 1.0 0.5 
+1.0 0.0 1.0 0.5 
+1.0 1.0 1.0 0.5 
+233.0 290.0 0.0 100 0 // 1ere sphere : x - y - z - rayon - id_material
+407.0 290.0 0.0 100 1
+320.0 140.0 0.0 100 2
+0.0 0.0 0.0 0.0 0.0 1.0 3 // 1er plan : x0 - y0 - z0 - nx - ny - nz - id_material
+0.0 240.0 -100.0 1.0 1.0 1.0 // lumiere : x - y - z - r - v - b
