@@ -22,8 +22,8 @@ struct sphere {
 };
 
 struct plan {
-	vecteur normale;
-	float d;
+	point origin;
+	vecteur normal;
 	int material;
 };
 
@@ -61,7 +61,6 @@ istream & operator >> ( istream &inputFile,  vecteur& v )
 		return inputFile >> v.x >> v.y >> v.z ; 
 	}
 
-
 istream & operator >> ( istream &inputFile, material& mat ) 
 	{
 		return inputFile >> mat.red >> mat.green >> mat.blue >> mat.reflection; 
@@ -70,11 +69,6 @@ istream & operator >> ( istream &inputFile, material& mat )
 istream & operator >> ( istream &inputFile, sphere& sph ) 
 	{
 		return inputFile >> sph.pos >> sph.size >> sph.material;
-	}
-
-istream & operator >> ( istream &inputFile, plan& pl) 
-	{
-		return inputFile >> pl.normale >> pl.d >> pl.material;
 	}
 
 istream & operator >> ( istream &inputFile, light& lig ) 
@@ -121,11 +115,6 @@ vecteur operator - (const vecteur&v1, const vecteur &v2)
 	}
 
 float operator * (const vecteur&v1, const vecteur &v2 ) 
-	{
-		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
-	}
-
-float operator * (const point &v1, const vecteur &v2 ) 
 	{
 		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 	}

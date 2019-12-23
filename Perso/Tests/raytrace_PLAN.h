@@ -14,9 +14,16 @@ struct material
 	float red, green, blue, reflection;
 };
 
+
 struct sphere {
 	point pos;
 	float size;
+	int material;
+};
+
+struct plan {
+	vecteur normale;
+	float d;
 	int material;
 };
 
@@ -37,6 +44,7 @@ struct scene
 	{
 		vector<material> matTab;
 		vector<sphere>   sphTab;
+		vector<plan> planTab;
 		vector<light>    lgtTab;
 		int sizex, sizey;
 	};
@@ -53,6 +61,7 @@ istream & operator >> ( istream &inputFile,  vecteur& v )
 		return inputFile >> v.x >> v.y >> v.z ; 
 	}
 
+
 istream & operator >> ( istream &inputFile, material& mat ) 
 	{
 		return inputFile >> mat.red >> mat.green >> mat.blue >> mat.reflection; 
@@ -61,6 +70,11 @@ istream & operator >> ( istream &inputFile, material& mat )
 istream & operator >> ( istream &inputFile, sphere& sph ) 
 	{
 		return inputFile >> sph.pos >> sph.size >> sph.material;
+	}
+
+istream & operator >> ( istream &inputFile, plan& pl) 
+	{
+		return inputFile >> pl.normale >> pl.d >> pl.material;
 	}
 
 istream & operator >> ( istream &inputFile, light& lig ) 
@@ -94,6 +108,12 @@ vecteur operator * (float c, const vecteur &v)
 		return v2;
 	}
 
+vecteur operator / (const vecteur &v, float c)
+	{
+		vecteur v2={v.x / c, v.y / c, v.z / c };
+		return v2;
+	}
+
 vecteur operator - (const vecteur&v1, const vecteur &v2)
 	{
 		vecteur v={v1.x - v2.x, v1.y - v2.y, v1.z - v2.z };
@@ -101,6 +121,11 @@ vecteur operator - (const vecteur&v1, const vecteur &v2)
 	}
 
 float operator * (const vecteur&v1, const vecteur &v2 ) 
+	{
+		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+	}
+
+float operator * (const point &v1, const vecteur &v2 ) 
 	{
 		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 	}
