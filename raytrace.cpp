@@ -10,6 +10,7 @@
 using namespace std;
 
 #include "raytrace.h"
+#define ind1 1.0f // indice de l'air
 
 bool init(char* inputName, scene &myScene) 
     {
@@ -139,7 +140,7 @@ void pix_impactPlan(scene &myScene, float &red, float &green, float &blue, float
         if (!inShadow) 
         {
             // lambert
-            float lambert = (lightRay.dir * n) * coef;
+            float lambert = (lightRay.dir * n) * coef * currentMat.opacity;
             red += lambert * current.red * currentMat.red;
             green += lambert * current.green * currentMat.green;
             blue += lambert * current.blue * currentMat.blue;
@@ -156,8 +157,7 @@ void pix_impactPlan(scene &myScene, float &red, float &green, float &blue, float
 void pix_impactSphere(scene &myScene, float &red, float &green, float &blue, float &coef, ray &viewRay, float &t, int currentSphere, point &impact)
 {
     vecteur n = impact - myScene.sphTab[currentSphere].pos; // normale au point d'intersection
-    float temp = 1/ sqrtf(n * n); 
-    n = temp * n ; // On normalise n
+    n = n / sqrtf(n*n);
                
     material currentMat = myScene.matTab[myScene.sphTab[currentSphere].material]; 
 
@@ -168,7 +168,7 @@ void pix_impactSphere(scene &myScene, float &red, float &green, float &blue, flo
         vecteur dist = current.pos - impact;
 
         if (n * dist <= 0.0f)
-            continue; // Si la lumiere est tangente, elle n'eclaire pas
+            continue; // Si n*dist < 0 : pas de specularite : on saute l'etape
 
         float t = sqrtf(dist * dist);
         if ( t <= 0.0f )
@@ -190,7 +190,7 @@ void pix_impactSphere(scene &myScene, float &red, float &green, float &blue, flo
         if (!inShadow) 
         {
             // lambert
-            float lambert = (lightRay.dir * n) * coef;
+            float lambert = (lightRay.dir * n) * coef * currentMat.opacity;
             red += lambert * current.red * currentMat.red;
             green += lambert * current.green * currentMat.green;
             blue += lambert * current.blue * currentMat.blue;
@@ -201,7 +201,7 @@ void pix_impactSphere(scene &myScene, float &red, float &green, float &blue, flo
     coef *= currentMat.reflection;
     float reflet = 2.0f * (viewRay.dir * n);
     viewRay.start = impact;
-    viewRay.dir = viewRay.dir - reflet * n;
+    viewRay.dir = viewRay.dir - reflet * n; // viewray devient le rayon réfléchi
 }
 
 bool find_intersection(scene &myScene, ray &viewRay, float &t, int &currentSphere, int &currentPlan, int &obj_type)
@@ -225,8 +225,34 @@ bool find_intersection(scene &myScene, ray &viewRay, float &t, int &currentSpher
 
     if (obj_type == -1)
         return false;
-    else 
-        return true;
+     
+    return true;
+}
+
+ray refract_ray_sphere_tmp(scene &myScene, ray &viewRay, float &t, int currentSphere, point &impact)
+{
+    // C'est deux refractions d'affile :
+    material currentMat = myScene.matTab[myScene.sphTab[currentSphere].material]; 
+    float ind2 = currentMat.refraction; // indice du materiau
+
+    // Premire refraction : on cree un rayon refracte t_ray:
+    vecteur n = impact - myScene.sphTab[currentSphere].pos; // normale au point d'impact
+    n = n / sqrtf(n*n);
+
+    vecteur v = viewRay.dir;
+    v = v / sqrtf(v*v);
+    float c = v * n;
+    c = -c;
+    float r = ind1/ind2 ;
+    float A =(r*c + sqrtf(1 - r*r*(1-c*c)));
+
+    // On genere le 1er rayon transmis
+    ray t_ray;
+    t_ray.start = impact;
+    vecteur refract_dir = (r*v) + (A*n);
+    refract_dir = refract_dir / sqrtf(refract_dir*refract_dir);
+    t_ray.dir = refract_dir;
+    return t_ray;
 }
 
 bool draw(char* outputName, scene &myScene) 
@@ -238,7 +264,6 @@ bool draw(char* outputName, scene &myScene)
         return false; 
     }
     init_img(imageFile, myScene);
-
     // ============================= On balaye tous les pixels ============================= 
 
     for (int y = 0; y < myScene.sizey; y++ ) 
@@ -252,6 +277,7 @@ bool draw(char* outputName, scene &myScene)
 
             // lancer de rayon 
             ray viewRay = { {float(x), float(y), -10000.0f}, {0, 0, 1}}; // lance un rayon à partir de la position (x, y, -10000) dans la direction z 
+            ray refract;
             do { 
                 // ============================= recherche de l'intersection la plus proche ============================= 
 
@@ -272,6 +298,17 @@ bool draw(char* outputName, scene &myScene)
                     case 1 :
                     
                         pix_impactSphere(myScene, red, green, blue, coef, viewRay, t, currentSphere, impact);
+                        if (myScene.matTab[myScene.sphTab[currentSphere].material].opacity != 1)
+                        {
+                            scene newScene;
+                            newScene % myScene;
+                            newScene.sphTab.erase(newScene.sphTab.begin()+currentSphere);
+                            /*if (level == 0)
+                                newScene.sphTab.erase(newScene.sphTab.begin()+currentSphere-1);*/
+                            if (level == 0 )
+                                viewRay = refract_ray_sphere_tmp(myScene, viewRay, t, currentSphere, impact);
+                            pix_impactSphere(newScene, red, green, blue, coef, viewRay, t, currentSphere, impact);
+                        }
                         level++;
                         break;
                     
@@ -282,7 +319,7 @@ bool draw(char* outputName, scene &myScene)
                         break;
                     
                 }
-            } while ((coef > 0.0f) && (level < 20));   
+            } while ((coef > 0.0f) && (level < 10));   
 
             imageFile.put((unsigned char)min(blue*255.0f,255.0f)).put((unsigned char)min(green*255.0f, 255.0f)).put((unsigned char)min(red*255.0f, 255.0f));
         }

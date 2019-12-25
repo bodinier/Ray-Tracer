@@ -11,7 +11,7 @@ struct vecteur {
 
 struct material 
 {
-	float red, green, blue, reflection;
+	float red, green, blue, reflection, opacity, refraction;
 };
 
 
@@ -64,7 +64,7 @@ istream & operator >> ( istream &inputFile,  vecteur& v )
 
 istream & operator >> ( istream &inputFile, material& mat ) 
 	{
-		return inputFile >> mat.red >> mat.green >> mat.blue >> mat.reflection; 
+		return inputFile >> mat.red >> mat.green >> mat.blue >> mat.reflection >> mat.opacity >> mat.refraction; 
 	}
 
 istream & operator >> ( istream &inputFile, sphere& sph ) 
@@ -88,6 +88,12 @@ point operator + (const point&p, const vecteur &v)
 	{
 		point p2={p.x + v.x, p.y + v.y, p.z + v.z };
 		return p2;
+	}
+
+vecteur operator + (const vecteur &u, const vecteur &v)
+	{
+		vecteur w = {u.x + v.x, u.y + v.y, u.z + v.z };
+		return w;
 	}
 
 point operator - (const point&p, const vecteur &v)
@@ -130,3 +136,12 @@ float operator * (const point &v1, const vecteur &v2 )
 		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 	}
 
+void operator % (scene &scene1, const scene scene2 ) 
+	{
+		scene1.matTab = scene2.matTab;
+		scene1.sphTab = scene2.sphTab;
+		scene1.planTab = scene2.planTab;
+		scene1.lgtTab = scene2.lgtTab;
+		scene1.sizex = scene2.sizex;
+		scene1.sizey = scene2.sizey;
+	}
