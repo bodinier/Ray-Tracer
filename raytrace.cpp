@@ -131,7 +131,7 @@ void pix_impactPlan(scene &myScene, float &red, float &green, float &blue, float
         bool inShadow = false; 
         for (unsigned int i = 0; i < myScene.sphTab.size(); ++i) 
         {
-            if (hitSphere(lightRay, myScene.sphTab[i], t)) 
+            if (hitSphere(lightRay, myScene.sphTab[i], t) && currentMat.opacity == 1) 
             {
                 inShadow = true;
                 break;
@@ -181,13 +181,13 @@ void pix_impactSphere(scene &myScene, float &red, float &green, float &blue, flo
         bool inShadow = false; 
         for (unsigned int i = 0; i < myScene.sphTab.size(); ++i) 
         {
-            if (hitSphere(lightRay, myScene.sphTab[i], t)) 
+            if (hitSphere(lightRay, myScene.sphTab[i], t) && myScene.matTab[myScene.sphTab[i].material].opacity == 1) 
             {
                 inShadow = true;
                 break;
             }
         }
-        if (!inShadow) 
+        if (!inShadow ) 
         {
             // lambert
             float lambert = (lightRay.dir * n) * coef * currentMat.opacity;
@@ -319,7 +319,7 @@ bool draw(char* outputName, scene &myScene)
                         break;
                     
                 }
-            } while ((coef > 0.0f) && (level < 10));   
+            } while ((coef > 0.0f) && (level < 5));   
 
             imageFile.put((unsigned char)min(blue*255.0f,255.0f)).put((unsigned char)min(green*255.0f, 255.0f)).put((unsigned char)min(red*255.0f, 255.0f));
         }
