@@ -1,59 +1,85 @@
 #pragma once 
 /* =========================== DEFINITION DES CLASSES =========================== */ 
 
-struct point {
+class point {
+	public :
+
 	float x, y, z;
 };
 
 
-struct vecteur {
+class vecteur {
+	public : 
+
 	float x, y, z;
 };
 
-struct material 
+class material 
 {
+	public : 
+
 	float red, green, blue, reflection, opacity, refraction;
 };
 
 
-struct sphere {
+class sphere {
+	public : 
+
 	point pos;
 	float size;
 	int material;
 };
 
-struct plan {
+class plan {
+	public : 
+
 	vecteur normale;
 	float d;
 	int material;
 };
 
-struct paraboloid {
+class paraboloid {
+	public : 
+
 	float a, b;
 	int material;
 };
 
-struct light 
+class light 
 {
+	public : 
+
 	point pos;
 	float red, green, blue;
 };
 
 
-struct ray 
+class ray 
 	{
+		public : 
+
 		point start;
 		vecteur dir;
 	};
 
-struct scene 
+class scene 
 	{
+		public :
+		scene(){};
+		//scene(const scene &){};
+
 		vector<material> matTab;
 		vector<sphere>   sphTab;
 		vector<plan> planTab;
 		vector<paraboloid> paraTab;
 		vector<light>    lgtTab;
 		int sizex, sizey;
+		int nbRebond;
+		bool shadow;
+		bool phong;
+
+		private :
+
 	};
 
 /* =========================== DEFINITION DES OPERATEURS DE FLUX =========================== */
@@ -149,7 +175,7 @@ float operator * (const point &v1, const vecteur &v2 )
 	}
 
 
-void operator % (scene &scene1, const scene scene2 ) 
+void operator % (scene &scene1, const scene scene2 ) // Operateur de copie
 	{
 		scene1.matTab = scene2.matTab;
 		scene1.sphTab = scene2.sphTab;

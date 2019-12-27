@@ -1,5 +1,6 @@
 #ifndef __INTERSECTIONS_H
 #define __INTERSECTIONS_H
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -16,6 +17,7 @@ using namespace std;
 
 bool hitPlan(const ray &r, const plan &pl, float &t)
 {
+    /* Fonction qui indique si on a rencontre un plan et actualise la distance t */
     float t_calc(0.0f);
     float temp = 1/sqrtf(pl.normale*pl.normale);
     vecteur n = temp * pl.normale;
@@ -33,7 +35,7 @@ return false;
  
 bool hitSphere(const ray &r, const sphere &s, float &t) 
 { 
-    // intersection rayon/sphere ssi distance entre pt de la droite et centre sphere < R :
+    /* Fonction qui indique si on a rencontre une sphere et actualise la distance t */
     vecteur dist = s.pos - r.start; 
     float B = r.dir * dist;
     float D = B*B - dist * dist + s.size * s.size; // D est le determinant 
@@ -41,7 +43,7 @@ bool hitSphere(const ray &r, const sphere &s, float &t)
         return false; // Déterminant nul -> pas d'intersections
     float t0 = B - sqrtf(D); //1ere racine
     float t1 = B + sqrtf(D); // 2eme racine
-    bool retvalue = false;  // Si retvalue, il faut actualiser un pixel
+    bool retvalue = false;  
     if ((t0 > 0.1f) && (t0 < t)) // Si t0<t c'est que la sphere est devant, il faut actualiser le pixel
     {
         t = t0;
@@ -57,11 +59,14 @@ bool hitSphere(const ray &r, const sphere &s, float &t)
 
 bool hitParaboloid (const ray &r, const paraboloid &para, float &t)
 {
-    // ====== ICI =====
+    /* Fonction qui indique si on a rencontre une paraboloide et actualise la distance t */
+
+    /* Dans le cas de la paraboloide on obtient une equation de degre 2 verifiee par t */
 	float a = ((r.dir.x)/para.a)*((r.dir.x)/para.a) + ((r.dir.y)/para.b)*((r.dir.y)/para.b);
 	float b = 2*r.start.x*r.dir.x/para.a + 2*(r.start.y)*r.dir.y/para.b - r.dir.z;
 	float c = (r.start.x/para.a)*(r.start.x/para.a) + (r.start.y/para.b)*(r.start.y/para.b) - r.start.z;
-	float D = b*b - 4*a*c;
+
+	float D = b*b - 4*a*c; // D est le determinant
 	if (D < 0.0f)
 	{
 		return false;
@@ -69,12 +74,12 @@ bool hitParaboloid (const ray &r, const paraboloid &para, float &t)
     bool retvalue = false;
 	float t0 = (-b-sqrtf(D))/2*a;
 	float t1 = (-b+sqrtf(D))/2*a;
-	if ((t0 > 0.1f) && (t0 < t)) // Si t0<t c'est que la sphere est devant, il faut actualiser le pixel
+	if ((t0 > 0.1f) && (t0 < t)) // Si t0<t c'est que l'objet est devant, il faut actualiser le pixel
     {
         t = t0;
         retvalue = true; 
     } 
-    if ((t1 > 0.1f) && (t1 < t)) // Si t1<t c'est que la sphere est devant, il faut actualiser le pixel
+    if ((t1 > 0.1f) && (t1 < t)) // Si t1<t c'est que l'objet est devant, il faut actualiser le pixel
     {
         t = t1; 
         retvalue = true; 
@@ -85,6 +90,7 @@ bool hitParaboloid (const ray &r, const paraboloid &para, float &t)
 
 void pix_impactPlan(scene &myScene, float &red, float &green, float &blue, float &coef, ray &viewRay, float &t, int currentPlan, point &impact)
 {
+    /* Fonction qui actualise la couleur du pixel d'impact quand c'est un plan */
     vecteur n = myScene.planTab[currentPlan].normale; // normale au point d'intersection
     float temp = 1/ sqrtf(n * n); 
     n = temp * n ; // On normalise n
@@ -137,6 +143,7 @@ void pix_impactPlan(scene &myScene, float &red, float &green, float &blue, float
 
 void pix_impactSphere(scene &myScene, float &red, float &green, float &blue, float &coef, ray &viewRay, float &t, int currentSphere, point &impact)
 {
+    /* Fonction qui actualise la couleur du pixel d'impact quand c'est une sphere */
     vecteur n = impact - myScene.sphTab[currentSphere].pos; // normale au point d'intersection
     n = n / sqrtf(n*n);
                
@@ -188,6 +195,7 @@ void pix_impactSphere(scene &myScene, float &red, float &green, float &blue, flo
 
 void pix_impactParaboloid(scene &myScene, float &red, float &green, float &blue, float &coef, ray &viewRay, float &t, int currentPara, point &impact)
 {
+    /* Fonction qui actualise la couleur du pixel d'impact quand c'est une paraboloide */
     paraboloid Para = myScene.paraTab[currentPara];
     vecteur n ;
     n.x = 2*impact.x/Para.a;

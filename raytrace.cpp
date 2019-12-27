@@ -11,10 +11,12 @@ using namespace std;
 
 #include "raytrace.h"
 #include "intersections.cpp"
+
 #define ind1 1.0f // indice de l'air
 
 bool init(char* inputName, scene &myScene) 
     {
+        /* Lit le fichier scene.txt et crée l'objet scene */
         int nbMat, nbSphere, nbPlan, nbPara, nbLight;
         int i;
         ifstream sceneFile(inputName);
@@ -36,8 +38,11 @@ bool init(char* inputName, scene &myScene)
             sceneFile >> myScene.matTab[i];
         for (i=0; i < nbSphere; i++) 
             sceneFile >> myScene.sphTab[i];
-        for (i=0; i < nbPlan; i++) 
-            sceneFile >> myScene.planTab[i];
+        if (nbPlan !=0)
+        {
+            for (i=0; i < nbPlan; i++) 
+                sceneFile >> myScene.planTab[i];
+        }
         if (nbPara != 0)
         {
             for (i=0; i < nbPlan; i++) 
@@ -50,6 +55,7 @@ bool init(char* inputName, scene &myScene)
 
 void init_tga(ofstream& imageFile, scene& myScene)
 {
+    /* Initialise le header du fichier TGA de sortie */
     // Ajout du header TGA
     imageFile.put(0).put(0);
     imageFile.put(2);        /* RGB non compresse */
@@ -70,6 +76,7 @@ void init_tga(ofstream& imageFile, scene& myScene)
 
 bool draw(char* outputName, scene &myScene) 
 {
+    /* Fonction principale qui balaye tous les pixels et dessine l'image */
     ofstream imageFile(outputName,ios_base::binary);
     if (!imageFile)
     {
@@ -78,12 +85,11 @@ bool draw(char* outputName, scene &myScene)
     }
     init_tga(imageFile, myScene);
     // ============================= On balaye tous les pixels ============================= 
-
     for (int y = 0; y < myScene.sizey; y++ ) 
     { 
         for (int x = 0; x < myScene.sizex; x++ ) 
         {
-            // Initialisation des couleurs : 
+            // Initialisation des couleurs et remise a zero des compteurs : 
             float red = 0, green = 0, blue = 0;
             float coef = 1.0f;
             int level = 0; 
@@ -98,47 +104,46 @@ bool draw(char* outputName, scene &myScene)
                 int currentSphere= -1;
                 int currentPlan = -1;
                 int currentPara = -1;
-                int obj_type = -1;
+                int obj_type = -1; // 1 = Sphere; 2 = plan; 3 = paraboloide
 
                 if(!find_intersection(myScene, viewRay, t, currentSphere, currentPlan, currentPara, obj_type))
                 {
-                    break;
+                    break; // Si le rayon n'a rencontre aucun objet, on laisse noir et on passe au suivant
                 }
 
                 // ============================= Point d'impact ============================= 
-                point impact = viewRay.start + t * viewRay.dir; // impact est le point d'intersection du rayon et de l'objet
+                point impact = viewRay.start + t * viewRay.dir; 
                 switch (obj_type)
                 {
-                    case 1 :
-                    
+                    case 1 : // Sphere
                         pix_impactSphere(myScene, red, green, blue, coef, viewRay, t, currentSphere, impact);
-                        if (myScene.matTab[myScene.sphTab[currentSphere].material].opacity != 1)
+                        if (myScene.matTab[myScene.sphTab[currentSphere].material].opacity != 1) // Materiau translucide :
                         {
+                            //scene newScene(myScene);
                             scene newScene;
                             newScene % myScene;
                             newScene.sphTab.erase(newScene.sphTab.begin()+currentSphere);
                             /*if (level == 0)
                                 newScene.sphTab.erase(newScene.sphTab.begin()+currentSphere-1);*/
                             if (level == 0 )
-                                viewRay = refract_ray_sphere_tmp(myScene, viewRay, t, currentSphere, impact);
+                                viewRay = refract_ray_sphere_tmp(myScene, viewRay, t, currentSphere, impact); // Le rayon est refracte si on entre dans un materiau a indice different de celui de l'air
                             pix_impactSphere(newScene, red, green, blue, coef, viewRay, t, currentSphere, impact);
                         }
                         level++;
                         break;
                     
-                    case 2 :
-                    
+                    case 2 : // Plan
                         pix_impactPlan(myScene, red, green, blue, coef, viewRay, t, currentPlan, impact);
                         level++;
                         break;
 
-                    case 3 :
+                    case 3 : // Paraboloide
                         pix_impactParaboloid(myScene, red, green, blue, coef, viewRay, t, currentPara, impact);
                         level ++;
                         break;
                     
                 }
-            } while ((coef > 0.0f) && (level < 5));   
+            } while ((coef > 0.0f) && (level < 10)); // Level est le nombre de rebond qu'on autorise au rayon
 
             imageFile.put((unsigned char)min(blue*255.0f,255.0f)).put((unsigned char)min(green*255.0f, 255.0f)).put((unsigned char)min(red*255.0f, 255.0f));
         }
