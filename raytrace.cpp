@@ -10,11 +10,12 @@
 using namespace std;
 
 #include "raytrace.h"
+#include "intersections.cpp"
 #define ind1 1.0f // indice de l'air
 
 bool init(char* inputName, scene &myScene) 
     {
-        int nbMat, nbSphere, nbPlan, nbLight;
+        int nbMat, nbSphere, nbPlan, nbPara, nbLight;
         int i;
         ifstream sceneFile(inputName);
 
@@ -25,10 +26,11 @@ bool init(char* inputName, scene &myScene)
         }
 
         sceneFile >> myScene.sizex >> myScene.sizey;
-        sceneFile >> nbMat >> nbSphere >> nbPlan >> nbLight;
+        sceneFile >> nbMat >> nbSphere >> nbPlan >> nbPara >> nbLight;
         myScene.matTab.resize(nbMat); 
         myScene.sphTab.resize(nbSphere);
         myScene.planTab.resize(nbPlan); 
+        myScene.paraTab.resize(nbPara);
         myScene.lgtTab.resize(nbLight); 
         for (i=0; i < nbMat; i++) 
             sceneFile >> myScene.matTab[i];
@@ -36,53 +38,17 @@ bool init(char* inputName, scene &myScene)
             sceneFile >> myScene.sphTab[i];
         for (i=0; i < nbPlan; i++) 
             sceneFile >> myScene.planTab[i];
+        if (nbPara != 0)
+        {
+            for (i=0; i < nbPlan; i++) 
+                sceneFile >> myScene.paraTab[i];
+        }
         for (i=0; i < nbLight; i++)
             sceneFile >> myScene.lgtTab[i];
         return true;
     } 
 
-bool hitPlan(const ray &r, const plan &pl, float &t)
-{
-    float t_calc(0.0f);
-    float temp = 1/sqrtf(pl.normale*pl.normale);
-    vecteur n = temp * pl.normale;
-    float A = pl.d - (r.start*n);
-    float B = n*r.dir;
-
-    t_calc = A/B;
-    if (t_calc < t)
-    {
-        t = t_calc;
-        return true;
-    }
-return false;
-}
- 
-bool hitSphere(const ray &r, const sphere &s, float &t) 
-{ 
-    // intersection rayon/sphere ssi distance entre pt de la droite et centre sphere < R :
-    vecteur dist = s.pos - r.start; 
-    float B = r.dir * dist;
-    float D = B*B - dist * dist + s.size * s.size; // D est le determinant 
-    if (D < 0.0f) 
-        return false; // Déterminant nul -> pas d'intersections
-    float t0 = B - sqrtf(D); //1ere racine
-    float t1 = B + sqrtf(D); // 2eme racine
-    bool retvalue = false;  // Si retvalue, il faut actualiser un pixel
-    if ((t0 > 0.1f) && (t0 < t)) // Si t0<t c'est que la sphere est devant, il faut actualiser le pixel
-    {
-        t = t0;
-        retvalue = true; 
-    } 
-    if ((t1 > 0.1f) && (t1 < t)) // Si t1<t c'est que la sphere est devant, il faut actualiser le pixel
-    {
-        t = t1; 
-        retvalue = true; 
-    }
-    return retvalue; 
-}
-
-void init_img(ofstream& imageFile, scene& myScene)
+void init_tga(ofstream& imageFile, scene& myScene)
 {
     // Ajout du header TGA
     imageFile.put(0).put(0);
@@ -102,159 +68,6 @@ void init_img(ofstream& imageFile, scene& myScene)
     // fin du header TGA
 }
 
-void pix_impactPlan(scene &myScene, float &red, float &green, float &blue, float &coef, ray &viewRay, float &t, int currentPlan, point &impact)
-{
-    vecteur n = myScene.planTab[currentPlan].normale; // normale au point d'intersection
-    float temp = 1/ sqrtf(n * n); 
-    n = temp * n ; // On normalise n
-               
-    material currentMat = myScene.matTab[myScene.planTab[currentPlan].material]; 
-
-    // ============================= couleur du point d'impact =============================  
-    for (unsigned int j = 0; j < myScene.lgtTab.size(); ++j) 
-    {
-        light current = myScene.lgtTab[j];
-        vecteur dist = current.pos - impact;
-
-        if (n * dist <= 0.0f)
-            continue; // Si la lumiere est tangente, elle n'eclaire pas
-
-        float t = sqrtf(dist * dist);
-        if ( t <= 0.0f )
-            continue;
-                     
-        ray lightRay;
-        lightRay.start = impact;
-        lightRay.dir = (1/t) * dist; // On normalise
-
-        // calcul des ombres 
-        bool inShadow = false; 
-        for (unsigned int i = 0; i < myScene.sphTab.size(); ++i) 
-        {
-            if (hitSphere(lightRay, myScene.sphTab[i], t) && currentMat.opacity == 1) 
-            {
-                inShadow = true;
-                break;
-            }
-        }
-        if (!inShadow) 
-        {
-            // lambert
-            float lambert = (lightRay.dir * n) * coef * currentMat.opacity;
-            red += lambert * current.red * currentMat.red;
-            green += lambert * current.green * currentMat.green;
-            blue += lambert * current.blue * currentMat.blue;
-        }
-    }
-                 
-    // on itére sur la prochaine reflexion
-    coef *= currentMat.reflection;
-    float reflet = 2.0f * (viewRay.dir * n);
-    viewRay.start = impact;
-    viewRay.dir = viewRay.dir - reflet * n;
-}
-
-void pix_impactSphere(scene &myScene, float &red, float &green, float &blue, float &coef, ray &viewRay, float &t, int currentSphere, point &impact)
-{
-    vecteur n = impact - myScene.sphTab[currentSphere].pos; // normale au point d'intersection
-    n = n / sqrtf(n*n);
-               
-    material currentMat = myScene.matTab[myScene.sphTab[currentSphere].material]; 
-
-    // ============================= couleur du point d'impact =============================  
-    for (unsigned int j = 0; j < myScene.lgtTab.size(); ++j) 
-    {
-        light current = myScene.lgtTab[j];
-        vecteur dist = current.pos - impact;
-
-        if (n * dist <= 0.0f)
-            continue; // Si n*dist < 0 : pas de specularite : on saute l'etape
-
-        float t = sqrtf(dist * dist);
-        if ( t <= 0.0f )
-            continue;
-        ray lightRay;
-        lightRay.start = impact;
-        lightRay.dir = (1/t) * dist; // On normalise
-
-        // calcul des ombres 
-        bool inShadow = false; 
-        for (unsigned int i = 0; i < myScene.sphTab.size(); ++i) 
-        {
-            if (hitSphere(lightRay, myScene.sphTab[i], t) && myScene.matTab[myScene.sphTab[i].material].opacity == 1) 
-            {
-                inShadow = true;
-                break;
-            }
-        }
-        if (!inShadow ) 
-        {
-            // lambert
-            float lambert = (lightRay.dir * n) * coef * currentMat.opacity;
-            red += lambert * current.red * currentMat.red;
-            green += lambert * current.green * currentMat.green;
-            blue += lambert * current.blue * currentMat.blue;
-        }
-    }
-                 
-    // on itére sur la prochaine reflexion
-    coef *= currentMat.reflection;
-    float reflet = 2.0f * (viewRay.dir * n);
-    viewRay.start = impact;
-    viewRay.dir = viewRay.dir - reflet * n; // viewray devient le rayon réfléchi
-}
-
-bool find_intersection(scene &myScene, ray &viewRay, float &t, int &currentSphere, int &currentPlan, int &obj_type)
-{
-    for (unsigned int i = 0; i < myScene.sphTab.size(); ++i) 
-    { 
-        if (hitSphere(viewRay, myScene.sphTab[i], t)) 
-        {
-            currentSphere = i;
-            obj_type = 1;
-        }
-    }
-    for (unsigned int i =0; i < myScene.planTab.size(); i++)
-    {
-        if (hitPlan(viewRay, myScene.planTab[i], t))
-        {
-            currentPlan = i;
-            obj_type = 2;
-        }  
-    }
-
-    if (obj_type == -1)
-        return false;
-     
-    return true;
-}
-
-ray refract_ray_sphere_tmp(scene &myScene, ray &viewRay, float &t, int currentSphere, point &impact)
-{
-    // C'est deux refractions d'affile :
-    material currentMat = myScene.matTab[myScene.sphTab[currentSphere].material]; 
-    float ind2 = currentMat.refraction; // indice du materiau
-
-    // Premire refraction : on cree un rayon refracte t_ray:
-    vecteur n = impact - myScene.sphTab[currentSphere].pos; // normale au point d'impact
-    n = n / sqrtf(n*n);
-
-    vecteur v = viewRay.dir;
-    v = v / sqrtf(v*v);
-    float c = v * n;
-    c = -c;
-    float r = ind1/ind2 ;
-    float A =(r*c + sqrtf(1 - r*r*(1-c*c)));
-
-    // On genere le 1er rayon transmis
-    ray t_ray;
-    t_ray.start = impact;
-    vecteur refract_dir = (r*v) + (A*n);
-    refract_dir = refract_dir / sqrtf(refract_dir*refract_dir);
-    t_ray.dir = refract_dir;
-    return t_ray;
-}
-
 bool draw(char* outputName, scene &myScene) 
 {
     ofstream imageFile(outputName,ios_base::binary);
@@ -263,7 +76,7 @@ bool draw(char* outputName, scene &myScene)
         printf("erreur de generation fichier outpout\n");
         return false; 
     }
-    init_img(imageFile, myScene);
+    init_tga(imageFile, myScene);
     // ============================= On balaye tous les pixels ============================= 
 
     for (int y = 0; y < myScene.sizey; y++ ) 
@@ -284,9 +97,10 @@ bool draw(char* outputName, scene &myScene)
                 float t = 200000.0f; // on part du fond de la scene 
                 int currentSphere= -1;
                 int currentPlan = -1;
+                int currentPara = -1;
                 int obj_type = -1;
 
-                if(!find_intersection(myScene, viewRay, t, currentSphere, currentPlan, obj_type))
+                if(!find_intersection(myScene, viewRay, t, currentSphere, currentPlan, currentPara, obj_type))
                 {
                     break;
                 }
@@ -316,6 +130,11 @@ bool draw(char* outputName, scene &myScene)
                     
                         pix_impactPlan(myScene, red, green, blue, coef, viewRay, t, currentPlan, impact);
                         level++;
+                        break;
+
+                    case 3 :
+                        pix_impactParaboloid(myScene, red, green, blue, coef, viewRay, t, currentPara, impact);
+                        level ++;
                         break;
                     
                 }

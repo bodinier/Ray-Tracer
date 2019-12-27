@@ -1,4 +1,3 @@
-#pragma once 
 /* =========================== DEFINITION DES CLASSES =========================== */ 
 
 struct point {
@@ -28,11 +27,6 @@ struct plan {
 	int material;
 };
 
-struct paraboloid {
-	float a, b;
-	int material;
-};
-
 struct light 
 {
 	point pos;
@@ -51,7 +45,6 @@ struct scene
 		vector<material> matTab;
 		vector<sphere>   sphTab;
 		vector<plan> planTab;
-		vector<paraboloid> paraTab;
 		vector<light>    lgtTab;
 		int sizex, sizey;
 	};
@@ -82,11 +75,6 @@ istream & operator >> ( istream &inputFile, sphere& sph )
 istream & operator >> ( istream &inputFile, plan& pl) 
 	{
 		return inputFile >> pl.normale >> pl.d >> pl.material;
-	}
-
-istream & operator >> ( istream &inputFile, paraboloid& para) 
-	{
-		return inputFile >> para.a >> para.b >> para.material;
 	}
 
 istream & operator >> ( istream &inputFile, light& lig ) 
@@ -147,7 +135,6 @@ float operator * (const point &v1, const vecteur &v2 )
 	{
 		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 	}
-
 
 void operator % (scene &scene1, const scene scene2 ) 
 	{

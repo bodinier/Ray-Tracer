@@ -1,3 +1,4 @@
+#pragma once 
 /* =========================== DEFINITION DES CLASSES =========================== */ 
 
 struct point {
@@ -27,6 +28,11 @@ struct plan {
 	int material;
 };
 
+struct paraboloid {
+	float a, b;
+	int material;
+};
+
 struct light 
 {
 	point pos;
@@ -45,6 +51,7 @@ struct scene
 		vector<material> matTab;
 		vector<sphere>   sphTab;
 		vector<plan> planTab;
+		vector<paraboloid> paraTab;
 		vector<light>    lgtTab;
 		int sizex, sizey;
 	};
@@ -77,6 +84,11 @@ istream & operator >> ( istream &inputFile, plan& pl)
 		return inputFile >> pl.normale >> pl.d >> pl.material;
 	}
 
+istream & operator >> ( istream &inputFile, paraboloid& para) 
+	{
+		return inputFile >> para.a >> para.b >> para.material;
+	}
+
 istream & operator >> ( istream &inputFile, light& lig ) 
 	{
 		return inputFile >> lig.pos >> lig.red >> lig.green >> lig.blue;
@@ -90,16 +102,10 @@ point operator + (const point&p, const vecteur &v)
 		return p2;
 	}
 
-point operator + (const vecteur &u, const vecteur &v)
+vecteur operator + (const vecteur &u, const vecteur &v)
 	{
-		point p2={u.x + v.x, u.y + v.y, u.z + v.z };
-		return p2;
-	}
-
-vecteur operator % (const vecteur &u, const vecteur &v)
-	{
-		vecteur p2={u.x + v.x, u.y + v.y, u.z + v.z };
-		return p2;
+		vecteur w = {u.x + v.x, u.y + v.y, u.z + v.z };
+		return w;
 	}
 
 point operator - (const point&p, const vecteur &v)
