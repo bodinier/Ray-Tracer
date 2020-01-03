@@ -14,6 +14,12 @@ class vecteur {
 	float x, y, z;
 };
 
+class pixel {
+	public :
+
+	int r, g, b;
+};
+
 class material 
 {
 	public : 
