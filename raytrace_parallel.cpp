@@ -197,20 +197,16 @@ int main(int argc, char *argv[] )
 
     if (rank == ROOT)
     	printf("Initialisation reussie \n");
-
-    /*if (rank == ROOT)
-    {
-    	std::chrono::time_point<std::chrono::system_clock> start,end;
-    	start = std::chrono::system_clock::now();
-   		printf("Calcul en cours ... \n");
-   	}*/
     
     const int stop=-1;
 
     if (rank==ROOT)
     {
     	// ========================================== MAÎTRE ==========================================
-    	
+    	printf("Calcul en cours ... \n");
+        std::chrono::time_point<std::chrono::system_clock> t_start;
+        t_start = std::chrono::system_clock::now();
+
         int send_lines, received_lines;
         send_lines=0;
         received_lines=0;
@@ -250,6 +246,13 @@ int main(int argc, char *argv[] )
 
         }
         draw(argv[2], myScene, pix_img);
+        std::chrono::time_point<std::chrono::system_clock> t_end;
+        t_end = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed_time = t_end-t_start;
+        std::cout << "elapsed_time = " << elapsed_time.count() << " s" << std::endl;
+        /*end = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed_time = end-start;
+        std::cout << "elapsed_time = " << elapsed_time.count() << " s" << std::endl;*/
     }
     else
     {
@@ -268,10 +271,6 @@ int main(int argc, char *argv[] )
     }
 
     MPI_Finalize ();
-
-    /*end = std::chrono::system_clock::now();
-    std::chrono::duration<double> elapsed_time = end-start;
-    std::cout << "elapsed_time = " << elapsed_time.count() << " s" << std::endl;*/
     return EXIT_SUCCESS;   
  }
 
