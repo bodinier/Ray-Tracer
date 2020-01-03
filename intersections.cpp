@@ -15,6 +15,15 @@ using namespace std;
 #include "raytrace.h"
 #define ind1 1.0f // indice de l'air
 
+#define specvalue 0.4
+#define specpower 3
+#define mode 1
+
+float max_val(float a, float b)
+{
+    return (a >= b) ? a : b;
+}
+
 bool hitPlan(const ray &r, const plan &pl, float &t)
 {
     /* Fonction qui indique si on a rencontre un plan et actualise la distance t */
@@ -132,6 +141,17 @@ void pix_impactPlan(scene &myScene, float &red, float &green, float &blue, float
             green += lambert * current.green * currentMat.green;
             blue += lambert * current.blue * currentMat.blue;
         }
+
+        if (mode == 1)
+        {
+            float reflet = 2.0f * (lightRay.dir * n);
+        vecteur phongDir = lightRay.dir - reflet * n;
+        float phongTerm = max_val(phongDir * viewRay.dir, 0.0f) ;
+        phongTerm = specvalue * powf(phongTerm, specpower) * coef;
+        red += phongTerm * current.red;
+        green += phongTerm * current.green;
+        blue += phongTerm * current.blue;
+        }
     }
                  
     // on itére sur la prochaine reflexion
@@ -183,6 +203,16 @@ void pix_impactSphere(scene &myScene, float &red, float &green, float &blue, flo
             red += lambert * current.red * currentMat.red;
             green += lambert * current.green * currentMat.green;
             blue += lambert * current.blue * currentMat.blue;
+        }
+        if (mode == 1)
+        {
+            float reflet = 2.0f * (lightRay.dir * n);
+        vecteur phongDir = lightRay.dir - reflet * n;
+        float phongTerm = max_val(phongDir * viewRay.dir, 0.0f) ;
+        phongTerm = specvalue * powf(phongTerm, specpower) * coef;
+        red += phongTerm * current.red;
+        green += phongTerm * current.green;
+        blue += phongTerm * current.blue;
         }
     }
                  
@@ -239,6 +269,17 @@ void pix_impactParaboloid(scene &myScene, float &red, float &green, float &blue,
             red += lambert * current.red * currentMat.red;
             green += lambert * current.green * currentMat.green;
             blue += lambert * current.blue * currentMat.blue;
+        }
+        
+        if (mode == 1)
+        {
+            float reflet = 2.0f * (lightRay.dir * n);
+        vecteur phongDir = lightRay.dir - reflet * n;
+        float phongTerm = max_val(phongDir * viewRay.dir, 0.0f) ;
+        phongTerm = specvalue * powf(phongTerm, specpower) * coef;
+        red += phongTerm * current.red;
+        green += phongTerm * current.green;
+        blue += phongTerm * current.blue;
         }
     }
                  

@@ -158,7 +158,7 @@ bool compute_line(scene &myScene, const int line, std::vector<pixel> &pix_line, 
                     
                 }
             } while ((coef > 0.0f) && (level < 10)); // Level est le nombre de rebond qu'on autorise au rayon
-
+            
             pix_line[x].r = (unsigned char)min(red*255.0f, 255.0f);
             pix_line[x].g = (unsigned char)min(green*255.0f, 255.0f);
             pix_line[x].b = (unsigned char)min(blue*255.0f, 255.0f);
