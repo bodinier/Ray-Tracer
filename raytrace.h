@@ -12,6 +12,14 @@ class vecteur {
 	public : 
 
 	float x, y, z;
+
+	void normalize(){
+		float norm = sqrtf(x*x + y*y + z*z);
+
+		x /=norm;
+		y /=norm;
+		z /=norm;
+	}
 };
 
 class pixel {
@@ -25,6 +33,17 @@ class material
 	public : 
 
 	float red, green, blue, reflection, opacity, refraction;
+};
+
+class triangle{
+	public :
+
+	point A;
+	point B;
+	point C;
+	vecteur u;
+	vecteur v;
+	int material;
 };
 
 
@@ -42,6 +61,7 @@ class plan {
 	vecteur normale;
 	float d;
 	int material;
+	int textureOn;
 };
 
 class paraboloid {
@@ -78,6 +98,7 @@ class scene
 		vector<sphere>   sphTab;
 		vector<plan> planTab;
 		vector<paraboloid> paraTab;
+		vector<triangle> triTab;
 		vector<light>    lgtTab;
 		int sizex, sizey;
 		int nbRebond;
@@ -113,12 +134,17 @@ istream & operator >> ( istream &inputFile, sphere& sph )
 
 istream & operator >> ( istream &inputFile, plan& pl) 
 	{
-		return inputFile >> pl.normale >> pl.d >> pl.material;
+		return inputFile >> pl.normale >> pl.d >> pl.textureOn >> pl.material;
 	}
 
 istream & operator >> ( istream &inputFile, paraboloid& para) 
 	{
 		return inputFile >> para.a >> para.b >> para.material;
+	}
+
+istream & operator >> ( istream &inputFile, triangle& tri) 
+	{
+		return inputFile >> tri.A >> tri.B >> tri.C >> tri.material;
 	}
 
 istream & operator >> ( istream &inputFile, light& lig ) 
@@ -146,7 +172,7 @@ point operator - (const point&p, const vecteur &v)
 		return p2;
 	}
 
-vecteur operator - (const point&p1, const point &p2)
+vecteur operator - (const point &p1, const point &p2)
 	{
 		vecteur v={p1.x - p2.x, p1.y - p2.y, p1.z - p2.z };
 		return v;
@@ -179,7 +205,14 @@ float operator * (const point &v1, const vecteur &v2 )
 	{
 		return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 	}
-
+vecteur operator ^(const vecteur u, const vecteur v)
+{
+	vecteur w;
+	w.x = u.y*v.z - u.z*v.y;
+	w.y = u.z*v.x - u.x*v.z;
+	w.z = u.x*v.y - u.y*v.x;
+	return w;
+}
 
 void operator % (scene &scene1, const scene scene2 ) // Operateur de copie
 	{

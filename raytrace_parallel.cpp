@@ -15,13 +15,13 @@ using namespace std;
 #include "intersections.cpp"
 
 #define ind1 1.0f // indice de l'air
-#define ROOT 0
+#define ROOT 0 // Processus maître
 
 
 bool init(char* inputName, scene &myScene) 
     {
         /* Lit le fichier scene.txt et crée l'objet scene */
-        int nbMat, nbSphere, nbPlan, nbPara, nbLight;
+        int nbMat, nbSphere, nbPlan, nbPara, nbTri, nbLight;
         int i;
         ifstream sceneFile(inputName);
 
@@ -32,11 +32,12 @@ bool init(char* inputName, scene &myScene)
         }
 
         sceneFile >> myScene.sizex >> myScene.sizey;
-        sceneFile >> nbMat >> nbSphere >> nbPlan >> nbPara >> nbLight;
+        sceneFile >> nbMat >> nbSphere >> nbPlan >> nbPara >> nbTri >> nbLight;
         myScene.matTab.resize(nbMat); 
         myScene.sphTab.resize(nbSphere);
         myScene.planTab.resize(nbPlan); 
         myScene.paraTab.resize(nbPara);
+        myScene.paraTab.resize(nbTri);
         myScene.lgtTab.resize(nbLight); 
         for (i=0; i < nbMat; i++) 
             sceneFile >> myScene.matTab[i];
@@ -51,6 +52,11 @@ bool init(char* inputName, scene &myScene)
         {
             for (i=0; i < nbPlan; i++) 
                 sceneFile >> myScene.paraTab[i];
+        }
+        if (nbTri != 0)
+        {
+            for (i=0; i < nbTri; i++) 
+                sceneFile >> myScene.triTab[i];
         }
         for (i=0; i < nbLight; i++)
             sceneFile >> myScene.lgtTab[i];
@@ -111,6 +117,8 @@ bool compute_line(scene &myScene, const int line, std::vector<pixel> &pix_line, 
             // lancer de rayon 
             ray viewRay = { {float(x), float(line), -10000.0f}, {0, 0, 1}}; // lance un rayon à partir de la position (x, line, -10000) dans la direction z 
             ray refract;
+
+            bool quit_plan = false;
             do { 
                 // ============================= recherche de l'intersection la plus proche ============================= 
 
@@ -123,33 +131,33 @@ bool compute_line(scene &myScene, const int line, std::vector<pixel> &pix_line, 
                 if(!find_intersection(myScene, viewRay, t, currentSphere, currentPlan, currentPara, obj_type))
                 {
                     break; // Si le rayon n'a rencontre aucun objet, on laisse noir et on passe au suivant
+                    // Sinon, on actualise t, current_obj et obj_type
                 }
 
                 // ============================= Point d'impact ============================= 
                 point impact = viewRay.start + t * viewRay.dir; 
+
                 switch (obj_type)
                 {
                     case 1 : // Sphere
                         pix_impactSphere(myScene, red, green, blue, coef, viewRay, t, currentSphere, impact);
                         if (myScene.matTab[myScene.sphTab[currentSphere].material].opacity != 1) // Materiau translucide :
                         {
-                            //scene newScene(myScene);
                             scene newScene;
                             newScene % myScene;
                             newScene.sphTab.erase(newScene.sphTab.begin()+currentSphere);
-                            /*if (level == 0)
-                                newScene.sphTab.erase(newScene.sphTab.begin()+currentSphere-1);*/
-                            if (level == 0 )
-                                viewRay = refract_ray_sphere_tmp(myScene, viewRay, t, currentSphere, impact); // Le rayon est refracte si on entre dans un materiau a indice different de celui de l'air
-                            	pix_impactSphere(newScene, red, green, blue, coef, viewRay, t, currentSphere, impact);
+
+                            if (level == 0)
+                            	viewRay = refract_ray_sphere(myScene, viewRay, t, currentSphere, impact); // Le rayon est refracte si on entre dans un materiau a indice different de celui de l'air
+                           	pix_impactSphere(newScene, red, green, blue, coef, viewRay, t, currentSphere, impact);
                         }
                         level++;
                         break;
                     
                     case 2 : // Plan
                         pix_impactPlan(myScene, red, green, blue, coef, viewRay, t, currentPlan, impact);
-                        level++;
-                        break;
+                       	level++;
+                       	break;
 
                     case 3 : // Paraboloide
                         pix_impactParaboloid(myScene, red, green, blue, coef, viewRay, t, currentPara, impact);
@@ -158,7 +166,7 @@ bool compute_line(scene &myScene, const int line, std::vector<pixel> &pix_line, 
                     
                 }
             } while ((coef > 0.0f) && (level < 10)); // Level est le nombre de rebond qu'on autorise au rayon
-            
+
             pix_line[x].r = (unsigned char)min(red*255.0f, 255.0f);
             pix_line[x].g = (unsigned char)min(green*255.0f, 255.0f);
             pix_line[x].b = (unsigned char)min(blue*255.0f, 255.0f);
@@ -245,14 +253,16 @@ int main(int argc, char *argv[] )
             }
 
         }
+        // On a fini les calculs, affichons le réultat :
+
         draw(argv[2], myScene, pix_img);
+
+
         std::chrono::time_point<std::chrono::system_clock> t_end;
         t_end = std::chrono::system_clock::now();
+
         std::chrono::duration<double> elapsed_time = t_end-t_start;
         std::cout << "elapsed_time = " << elapsed_time.count() << " s" << std::endl;
-        /*end = std::chrono::system_clock::now();
-        std::chrono::duration<double> elapsed_time = end-start;
-        std::cout << "elapsed_time = " << elapsed_time.count() << " s" << std::endl;*/
     }
     else
     {

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <cmath>
+#include <math.h>
 #include <limits>
 #include <algorithm>
 #include <time.h>
@@ -16,31 +17,61 @@ using namespace std;
 #define ind1 1.0f // indice de l'air
 
 #define specvalue 0.4
-#define specpower 3
-#define mode 1
+#define specpower 70
+#define mode 0 // Active ou non la spécuarité
+#define enable_refraction 1 // Active ou non la réfraction des rayons
+#define enableNoise 0
+#define L 100
 
 float max_val(float a, float b)
 {
     return (a >= b) ? a : b;
 }
 
+bool chooseColorTexture(const point impact, const plan pl)
+{
+    //float x = (pl.d - pl.normale.y*impact.y - pl.normale.z*impact.z)/pl.normale.x;
+    if (((int)floor(impact.x/L)%2 == 0 && (int)floor(impact.z/L)%2 == 0) || ((int)floor(impact.x/L)%2 == 1 && (int)floor(impact.z/L)%2 == 1))
+        return true;
+    else 
+        return false;
+}
+
 bool hitPlan(const ray &r, const plan &pl, float &t)
 {
     /* Fonction qui indique si on a rencontre un plan et actualise la distance t */
     float t_calc(0.0f);
-    float temp = 1/sqrtf(pl.normale*pl.normale);
-    vecteur n = temp * pl.normale;
+    vecteur n = pl.normale;
+    n.normalize();
     float A = pl.d - (r.start*n);
     float B = n*r.dir;
 
     t_calc = A/B;
-    if (t_calc < t)
+    if ((t >0.1f) && t_calc < t && t_calc > 0 /*&& t_calc < 15000*/)
     {
         t = t_calc;
         return true;
     }
-return false;
+	return false;
 }
+
+/*bool hitTri(const ray &r, const triangle &tri, float &t)
+{
+    Fonction qui indique si on a rencontre un plan et actualise la distance t
+    float t_calc(0.0f);
+    vecteur n = pl.normale;
+    n.normalize();
+    float A = pl.d - (r.start*n);
+    float B = n*r.dir;
+
+    t_calc = A/B;
+    if ((t >0.1f) && t_calc < t && t_calc > 0//&& t_calc < 15000)
+    {
+        t = t_calc;
+        return true;
+    }
+	return false;
+}*/
  
 bool hitSphere(const ray &r, const sphere &s, float &t) 
 { 
@@ -52,18 +83,18 @@ bool hitSphere(const ray &r, const sphere &s, float &t)
         return false; // Déterminant nul -> pas d'intersections
     float t0 = B - sqrtf(D); //1ere racine
     float t1 = B + sqrtf(D); // 2eme racine
-    bool retvalue = false;  
+    bool isImpacted = false;  
     if ((t0 > 0.1f) && (t0 < t)) // Si t0<t c'est que la sphere est devant, il faut actualiser le pixel
     {
         t = t0;
-        retvalue = true; 
+        isImpacted = true; 
     } 
     if ((t1 > 0.1f) && (t1 < t)) // Si t1<t c'est que la sphere est devant, il faut actualiser le pixel
     {
         t = t1; 
-        retvalue = true; 
+        isImpacted = true; 
     }
-    return retvalue; 
+    return isImpacted; 
 }
 
 bool hitParaboloid (const ray &r, const paraboloid &para, float &t)
@@ -80,20 +111,20 @@ bool hitParaboloid (const ray &r, const paraboloid &para, float &t)
 	{
 		return false;
 	}
-    bool retvalue = false;
+    bool isImpacted = false;
 	float t0 = (-b-sqrtf(D))/2*a;
 	float t1 = (-b+sqrtf(D))/2*a;
 	if ((t0 > 0.1f) && (t0 < t)) // Si t0<t c'est que l'objet est devant, il faut actualiser le pixel
     {
         t = t0;
-        retvalue = true; 
+        isImpacted = true; 
     } 
     if ((t1 > 0.1f) && (t1 < t)) // Si t1<t c'est que l'objet est devant, il faut actualiser le pixel
     {
         t = t1; 
-        retvalue = true; 
+        isImpacted = true; 
     }
-    return retvalue; 
+    return isImpacted; 
 }
 
 
@@ -101,8 +132,7 @@ void pix_impactPlan(scene &myScene, float &red, float &green, float &blue, float
 {
     /* Fonction qui actualise la couleur du pixel d'impact quand c'est un plan */
     vecteur n = myScene.planTab[currentPlan].normale; // normale au point d'intersection
-    float temp = 1/ sqrtf(n * n); 
-    n = temp * n ; // On normalise n
+    n.normalize();
                
     material currentMat = myScene.matTab[myScene.planTab[currentPlan].material]; 
 
@@ -119,38 +149,56 @@ void pix_impactPlan(scene &myScene, float &red, float &green, float &blue, float
         if ( temp <= 0.0f )
             continue;
                      
-        ray lightRay;
-        lightRay.start = impact;
-        lightRay.dir = (1/temp) * dist; // On normalise
+        ray lightRay = {{impact.x, impact.y, impact.z}, {dist.x, dist.y, dist.z}};
+        lightRay.dir.normalize(); // On normalise
 
         // calcul des ombres 
-        bool inShadow = false; 
+        bool shadow = false; 
         for (unsigned int i = 0; i < myScene.sphTab.size(); ++i) 
         {
             if (hitSphere(lightRay, myScene.sphTab[i], t) && currentMat.opacity == 1) 
             {
-                inShadow = true;
+                shadow = true;
                 break;
             }
         }
-        if (!inShadow) 
-        {
-            // lambert
+        if (!shadow) 
+        {   if ((myScene.planTab[currentPlan].textureOn == 1) && chooseColorTexture(impact, myScene.planTab[currentPlan]))
+            {
+                // lambert
             float lambert = (lightRay.dir * n) * coef * currentMat.opacity;
             red += lambert * current.red * currentMat.red;
             green += lambert * current.green * currentMat.green;
             blue += lambert * current.blue * currentMat.blue;
+            }
+            else {
+                // lambert
+                float lambert = (lightRay.dir * n) * coef * currentMat.opacity;
+                red += 0;
+                green += 0;
+                blue += 0;
+            }
+            if (myScene.planTab[currentPlan].textureOn == 0)
+            {
+                {
+                        // lambert
+                    float lambert = (lightRay.dir * n) * coef * currentMat.opacity;
+                    red += lambert * current.red * currentMat.red;
+                    green += lambert * current.green * currentMat.green;
+                    blue += lambert * current.blue * currentMat.blue;
+                }
+            }
         }
 
         if (mode == 1)
         {
             float reflet = 2.0f * (lightRay.dir * n);
-        vecteur phongDir = lightRay.dir - reflet * n;
-        float phongTerm = max_val(phongDir * viewRay.dir, 0.0f) ;
-        phongTerm = specvalue * powf(phongTerm, specpower) * coef;
-        red += phongTerm * current.red;
-        green += phongTerm * current.green;
-        blue += phongTerm * current.blue;
+            vecteur phongDir = lightRay.dir - reflet * n;
+            float phongTerm = max_val(phongDir * viewRay.dir, 0.0f) ;
+            phongTerm = specvalue * powf(phongTerm, specpower) * coef;
+            red += phongTerm * current.red;
+            green += phongTerm * current.green;
+            blue += phongTerm * current.blue;
         }
     }
                  
@@ -165,7 +213,13 @@ void pix_impactSphere(scene &myScene, float &red, float &green, float &blue, flo
 {
     /* Fonction qui actualise la couleur du pixel d'impact quand c'est une sphere */
     vecteur n = impact - myScene.sphTab[currentSphere].pos; // normale au point d'intersection
-    n = n / sqrtf(n*n);
+    if (enableNoise)
+    {
+    	impact.x +=0.1*n.x;
+    	impact.y *= n.y;
+    	impact.z -= 0.1*n.z;
+    }
+    n.normalize();
                
     material currentMat = myScene.matTab[myScene.sphTab[currentSphere].material]; 
 
@@ -181,22 +235,22 @@ void pix_impactSphere(scene &myScene, float &red, float &green, float &blue, flo
         float t = sqrtf(dist * dist);
         if ( t <= 0.0f )
             continue;
-        ray lightRay;
-        lightRay.start = impact;
-        lightRay.dir = (1/t) * dist; // On normalise
+
+        ray lightRay = {{impact.x, impact.y, impact.z}, {dist.x, dist.y, dist.z}};
+        lightRay.dir.normalize(); // On normalise
 
         // calcul des ombres 
-        bool inShadow = false; 
+        bool shadow = false; 
         for (unsigned int i = 0; i < myScene.sphTab.size(); ++i) 
         {
-            if (hitSphere(lightRay, myScene.sphTab[i], t) && myScene.matTab[myScene.sphTab[i].material].opacity == 1) 
+            if (hitSphere(lightRay, myScene.sphTab[i], t)) 
             {
-                inShadow = true;
+                shadow = true;
                 break;
             }
         }
-        //inShadow = false;
-        if (!inShadow ) 
+
+        if (!shadow) 
         {
             // lambert
             float lambert = (lightRay.dir * n) * coef * currentMat.opacity;
@@ -207,12 +261,12 @@ void pix_impactSphere(scene &myScene, float &red, float &green, float &blue, flo
         if (mode == 1)
         {
             float reflet = 2.0f * (lightRay.dir * n);
-        vecteur phongDir = lightRay.dir - reflet * n;
-        float phongTerm = max_val(phongDir * viewRay.dir, 0.0f) ;
-        phongTerm = specvalue * powf(phongTerm, specpower) * coef;
-        red += phongTerm * current.red;
-        green += phongTerm * current.green;
-        blue += phongTerm * current.blue;
+            vecteur phongDir = lightRay.dir - reflet * n;
+            float phongTerm = max_val(phongDir * viewRay.dir, 0.0f) ;
+            phongTerm = specvalue * powf(phongTerm, specpower) * coef;
+            red += phongTerm * current.red;
+            green += phongTerm * current.green;
+            blue += phongTerm * current.blue;
         }
     }
                  
@@ -231,7 +285,7 @@ void pix_impactParaboloid(scene &myScene, float &red, float &green, float &blue,
     n.x = 2*impact.x/Para.a;
     n.y = 2*(impact.y)/Para.b;
     n.z = -1.0f;
-    n = n / sqrtf(n*n);
+    n.normalize();
                
     material currentMat = myScene.matTab[Para.material]; 
 
@@ -247,22 +301,22 @@ void pix_impactParaboloid(scene &myScene, float &red, float &green, float &blue,
         float t = sqrtf(dist * dist);
         if ( t <= 0.0f )
             continue;
-        ray lightRay;
-        lightRay.start = impact;
-        lightRay.dir = (1/t) * dist; // On normalise
+        
+        ray lightRay = {{impact.x, impact.y, impact.z}, {dist.x, dist.y, dist.z}};
+        lightRay.dir.normalize(); // On normalise
 
         // calcul des ombres 
-        bool inShadow = false; 
+        bool shadow = false; 
         for (unsigned int i = 0; i < myScene.sphTab.size(); ++i) 
         {
             if (hitSphere(lightRay, myScene.sphTab[i], t) && myScene.matTab[myScene.sphTab[i].material].opacity == 1) 
             {
-                inShadow = true;
+                shadow = true;
                 break;
             }
         }
-        inShadow = false;
-        if (!inShadow ) 
+        shadow = false;
+        if (!shadow ) 
         {
             // lambert
             float lambert = (lightRay.dir * n) * coef * currentMat.opacity;
@@ -274,12 +328,12 @@ void pix_impactParaboloid(scene &myScene, float &red, float &green, float &blue,
         if (mode == 1)
         {
             float reflet = 2.0f * (lightRay.dir * n);
-        vecteur phongDir = lightRay.dir - reflet * n;
-        float phongTerm = max_val(phongDir * viewRay.dir, 0.0f) ;
-        phongTerm = specvalue * powf(phongTerm, specpower) * coef;
-        red += phongTerm * current.red;
-        green += phongTerm * current.green;
-        blue += phongTerm * current.blue;
+            vecteur phongDir = lightRay.dir - reflet * n;
+            float phongTerm = max_val(phongDir * viewRay.dir, 0.0f) ;
+            phongTerm = specvalue * powf(phongTerm, specpower) * coef;
+            red += phongTerm * current.red;
+            green += phongTerm * current.green;
+            blue += phongTerm * current.blue;
         }
     }
                  
@@ -323,8 +377,11 @@ bool find_intersection(scene &myScene, ray &viewRay, float &t, int &currentSpher
     return true;
 }
 
-ray refract_ray_sphere_tmp(scene &myScene, ray &viewRay, float &t, int currentSphere, point &impact)
+ray refract_ray_sphere(scene &myScene, ray &viewRay, float &t, int currentSphere, point &impact)
 {
+    if (enable_refraction == 0)
+        return viewRay;
+    
     // C'est deux refractions d'affile :
     material currentMat = myScene.matTab[myScene.sphTab[currentSphere].material]; 
     float ind2 = currentMat.refraction; // indice du materiau
@@ -334,10 +391,12 @@ ray refract_ray_sphere_tmp(scene &myScene, ray &viewRay, float &t, int currentSp
     n = n / sqrtf(n*n);
 
     vecteur v = viewRay.dir;
+
     v = v / sqrtf(v*v);
-    float c = v * n;
-    c = -c;
+    float c = -1*v * n;
     float r = ind1/ind2 ;
+    if (1 - r*r*(1-c*c) < 0)
+        return viewRay;
     float A =(r*c + sqrtf(1 - r*r*(1-c*c)));
 
     // On genere le 1er rayon transmis
