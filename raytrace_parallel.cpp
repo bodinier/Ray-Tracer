@@ -21,7 +21,7 @@ using namespace std;
 bool init(char* inputName, scene &myScene) 
     {
         /* Lit le fichier scene.txt et crée l'objet scene */
-        int nbMat, nbSphere, nbPlan, nbPara, nbTri, nbLight;
+        int nbMat, nbSphere, nbPlan, nbParab, nbPara, nbLight;
         int i;
         ifstream sceneFile(inputName);
 
@@ -32,12 +32,12 @@ bool init(char* inputName, scene &myScene)
         }
 
         sceneFile >> myScene.sizex >> myScene.sizey;
-        sceneFile >> nbMat >> nbSphere >> nbPlan >> nbPara >> nbTri >> nbLight;
+        sceneFile >> nbMat >> nbSphere >> nbPlan >> nbParab >> nbPara >> nbLight;
         myScene.matTab.resize(nbMat); 
         myScene.sphTab.resize(nbSphere);
         myScene.planTab.resize(nbPlan); 
+        myScene.parabTab.resize(nbParab);
         myScene.paraTab.resize(nbPara);
-        myScene.paraTab.resize(nbTri);
         myScene.lgtTab.resize(nbLight); 
         for (i=0; i < nbMat; i++) 
             sceneFile >> myScene.matTab[i];
@@ -48,15 +48,15 @@ bool init(char* inputName, scene &myScene)
             for (i=0; i < nbPlan; i++) 
                 sceneFile >> myScene.planTab[i];
         }
-        if (nbPara != 0)
+        if (nbParab != 0)
         {
             for (i=0; i < nbPlan; i++) 
                 sceneFile >> myScene.paraTab[i];
         }
-        if (nbTri != 0)
+        if (nbPara != 0)
         {
-            for (i=0; i < nbTri; i++) 
-                sceneFile >> myScene.triTab[i];
+            for (i=0; i < nbPara; i++) 
+                sceneFile >> myScene.paraTab[i];
         }
         for (i=0; i < nbLight; i++)
             sceneFile >> myScene.lgtTab[i];
@@ -125,10 +125,11 @@ bool compute_line(scene &myScene, const int line, std::vector<pixel> &pix_line, 
                 float t = 200000.0f; // on part du fond de la scene 
                 int currentSphere= -1;
                 int currentPlan = -1;
+                int currentParab = -1;
                 int currentPara = -1;
                 int obj_type = -1; // 1 = Sphere; 2 = plan; 3 = paraboloide
 
-                if(!find_intersection(myScene, viewRay, t, currentSphere, currentPlan, currentPara, obj_type))
+                if(!find_intersection(myScene, viewRay, t, currentSphere, currentPlan, currentParab, currentPara, obj_type))
                 {
                     break; // Si le rayon n'a rencontre aucun objet, on laisse noir et on passe au suivant
                     // Sinon, on actualise t, current_obj et obj_type
@@ -160,10 +161,14 @@ bool compute_line(scene &myScene, const int line, std::vector<pixel> &pix_line, 
                        	break;
 
                     case 3 : // Paraboloide
-                        pix_impactParaboloid(myScene, red, green, blue, coef, viewRay, t, currentPara, impact);
+                        pix_impactParaboloid(myScene, red, green, blue, coef, viewRay, t, currentParab, impact);
                         level ++;
                         break;
-                    
+                    case 4 : // paralellogramme
+                        printf("coucou !!\n");
+                        pix_impactParalello(myScene, red, green, blue, coef, viewRay, t, currentPara, impact);
+                        level ++;
+                        break;
                 }
             } while ((coef > 0.0f) && (level < 10)); // Level est le nombre de rebond qu'on autorise au rayon
 

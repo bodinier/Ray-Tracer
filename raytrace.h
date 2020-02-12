@@ -35,14 +35,12 @@ class material
 	float red, green, blue, reflection, opacity, refraction;
 };
 
-class triangle{
+class paralello{
 	public :
 
 	point A;
 	point B;
 	point C;
-	vecteur u;
-	vecteur v;
 	int material;
 };
 
@@ -95,11 +93,11 @@ class scene
 		//scene(const scene &){};
 
 		vector<material> matTab;
-		vector<sphere>   sphTab;
+		vector<sphere> sphTab;
 		vector<plan> planTab;
-		vector<paraboloid> paraTab;
-		vector<triangle> triTab;
-		vector<light>    lgtTab;
+		vector<paraboloid> parabTab;
+		vector<paralello> paraTab;
+		vector<light> lgtTab;
 		int sizex, sizey;
 		int nbRebond;
 		bool shadow;
@@ -142,9 +140,9 @@ istream & operator >> ( istream &inputFile, paraboloid& para)
 		return inputFile >> para.a >> para.b >> para.material;
 	}
 
-istream & operator >> ( istream &inputFile, triangle& tri) 
+istream & operator >> ( istream &inputFile, paralello& para) 
 	{
-		return inputFile >> tri.A >> tri.B >> tri.C >> tri.material;
+		return inputFile >> para.A >> para.B >> para.C >> para.material;
 	}
 
 istream & operator >> ( istream &inputFile, light& lig ) 
