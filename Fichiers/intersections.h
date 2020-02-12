@@ -6,8 +6,6 @@
 #include <fstream>
 #include <vector>
 #include <cmath>
-#include <limits>
-#include <algorithm>
 #include <time.h>
 #include <chrono>
 using namespace std;

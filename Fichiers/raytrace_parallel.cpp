@@ -2,12 +2,9 @@
 #include <fstream>
 #include <vector>
 #include <cmath>
-#include <limits>
-#include <algorithm>
 #include <time.h>
 #include <chrono>
 #include <mpi.h>
-
 
 using namespace std;
 
